@@ -1,5 +1,30 @@
 import Phaser from 'phaser';
 
+class StartScene extends Phaser.Scene {
+    constructor() {
+        super('start-scene');
+    }
+
+    preload() {
+        this.load.image('startButton', 'assets/button-start.png'); // スタートボタンの画像を読み込む
+    }
+
+    create() {
+        // スタートボタンを配置
+        const button = this.add.image(this.scale.width / 2, this.scale.height / 2, 'startButton');
+        button.setInteractive();
+
+        // スタートボタンがクリックされたときにShadowGameシーンを開始
+        button.on('pointerdown', () => {
+            this.scene.start('shadow-game');
+        });
+
+        // ボタンのサイズを調整
+        const buttonWidth = Math.min(this.scale.width, this.scale.height) / 2;
+        button.setDisplaySize(buttonWidth, button.height * (buttonWidth / button.width));
+    }
+}
+
 class ShadowGame extends Phaser.Scene {
     private animals: Phaser.GameObjects.Image[] = [];
     private shadow: Phaser.GameObjects.Image | null = null;
@@ -246,7 +271,7 @@ const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     width: window.innerWidth * window.devicePixelRatio,
     height: window.innerHeight * window.devicePixelRatio,
-    scene: ShadowGame,
+    scene: [StartScene, ShadowGame],
     backgroundColor: '#87CEEB',  // 背景色を水色に設定
     scale: {
         mode: Phaser.Scale.FIT,
