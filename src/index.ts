@@ -1,13 +1,18 @@
 import Phaser from 'phaser';
 
-class PuzzleGame extends Phaser.Scene {
+class ShadowGame extends Phaser.Scene {
     private animals: Phaser.GameObjects.Image[] = [];
     private shadow: Phaser.GameObjects.Image | null = null;
     private correctAnimalKey: string = '';
     private currentDepth: number = 0; // 現在の最大深度を追跡
 
+    private correctSound: Phaser.Sound.BaseSound | null = null;
+    private seikaiVoice: Phaser.Sound.BaseSound | null = null;
+    private yattaneVoice: Phaser.Sound.BaseSound | null = null;
+    private wrongSound: Phaser.Sound.BaseSound | null = null;
+
     constructor() {
-        super('puzzle-game');
+        super('shadow-game');
     }
 
     preload() {
@@ -19,9 +24,19 @@ class PuzzleGame extends Phaser.Scene {
         this.load.image('shadow-hippo', 'assets/shadow_hippo.png');
         this.load.image('tree', 'assets/tree.png'); // 木の画像を読み込む
         this.load.image('grass', 'assets/grass.png'); // 草の画像を読み込む
+        this.load.audio('correctSound', 'assets/quiz-pinpon.mp3'); // 正解の音を読み込む
+        this.load.audio('seikaiVoice', 'assets/voice-seikai.mp3'); // 正解の音声を読み込む
+        this.load.audio('yattaneVoice', 'assets/voice-yattane.mp3'); // やったねの音声を読み込む
+        this.load.audio('wrongSound', 'assets/quiz-bu.mp3'); // 不正解の音を読み込む
     }
 
     create() {
+        // サウンドオブジェクトを作成
+        this.correctSound = this.sound.add('correctSound');
+        this.seikaiVoice = this.sound.add('seikaiVoice');
+        this.yattaneVoice = this.sound.add('yattaneVoice');
+        this.wrongSound = this.sound.add('wrongSound');
+
         // 画面の上半分を水色、下半分を緑色に設定
         const upperBackground = this.add.rectangle(0, 0, window.innerWidth, window.innerHeight / 3, 0x87CEEB).setOrigin(0);
         const lowerBackground = this.add.rectangle(0, window.innerHeight / 3, window.innerWidth, window.innerHeight * 2 / 3, 0x3bae39).setOrigin(0);
@@ -126,7 +141,6 @@ class PuzzleGame extends Phaser.Scene {
                 this.handleAnimalDrop(gameObject);
             } else {
                 // 影と重ならない場合、動物はそのままの位置に留まる
-                // 追加の処理は必要ありません
             }
         });
     }
@@ -140,6 +154,16 @@ class PuzzleGame extends Phaser.Scene {
     handleAnimalDrop(droppedAnimal: Phaser.GameObjects.Image) {
         if (droppedAnimal.texture.key === this.correctAnimalKey) {
             // 正解の場合
+            this.correctSound!.play();
+
+            this.time.delayedCall(900, () => {
+                this.yattaneVoice!.play();
+            });
+
+            this.time.delayedCall(1700, () => {
+                this.seikaiVoice!.play();
+            });
+
             droppedAnimal.disableInteractive();  // 正解の動物のインタラクティブ性を無効にする
             this.shadow!.disableInteractive();  // 影のインタラクティブ性も無効にする
 
@@ -179,6 +203,7 @@ class PuzzleGame extends Phaser.Scene {
             });
         } else {
             // 不正解の場合、動物をフェードアウトして消す
+            this.wrongSound!.play(); // 不正解の音を再生
             this.tweens.add({
                 targets: droppedAnimal,
                 alpha: 0,
@@ -196,8 +221,8 @@ const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     width: window.innerWidth,
     height: window.innerHeight,
-    scene: PuzzleGame,
-    backgroundColor: '#FFFFFF',  // 背景色を白に設定
+    scene: ShadowGame,
+    backgroundColor: '#87CEEB',  // 背景色を水色に設定
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
