@@ -38,18 +38,18 @@ class ShadowGame extends Phaser.Scene {
         this.wrongSound = this.sound.add('wrongSound');
 
         // 画面の上半分を水色、下半分を緑色に設定
-        const upperBackground = this.add.rectangle(0, 0, window.innerWidth, window.innerHeight / 3, 0x87CEEB).setOrigin(0);
-        const lowerBackground = this.add.rectangle(0, window.innerHeight / 3, window.innerWidth, window.innerHeight * 2 / 3, 0x3bae39).setOrigin(0);
+        const upperBackground = this.add.rectangle(0, 0, this.scale.width, this.scale.height / 3, 0x87CEEB).setOrigin(0);
+        const lowerBackground = this.add.rectangle(0, this.scale.height / 3, this.scale.width, this.scale.height * 2 / 3, 0x3bae39).setOrigin(0);
 
         // 背景を最背面に設定
         upperBackground.setDepth(-3);
         lowerBackground.setDepth(-3);
 
         // 木を配置
-        const treeHeight = window.innerHeight / 5;
-        const treeYPosition = window.innerHeight * 1.1 / 3; // 背景の緑色の端にぴったり重なる位置
+        const treeHeight = this.scale.height / 5;
+        const treeYPosition = this.scale.height * 1.1 / 3; // 背景の緑色の端にぴったり重なる位置
         const treeLeft = this.add.image(0, treeYPosition, 'tree').setOrigin(0, 1);
-        const treeRight = this.add.image(window.innerWidth, treeYPosition, 'tree').setOrigin(1, 1);
+        const treeRight = this.add.image(this.scale.width, treeYPosition, 'tree').setOrigin(1, 1);
 
         // 木の高さを設定
         treeLeft.setDisplaySize(treeLeft.width * (treeHeight / treeLeft.height), treeHeight);
@@ -60,60 +60,60 @@ class ShadowGame extends Phaser.Scene {
 
         // 草を配置
         const grassPositions = [
-            { x: window.innerWidth * 0.1, y: window.innerHeight * 2.5 / 6 },
-            { x: window.innerWidth * 0.85, y: window.innerHeight * 2.3 / 6 },
-            { x: window.innerWidth * 0.2, y: window.innerHeight * 3.3 / 6 },
-            { x: window.innerWidth * 0.8, y: window.innerHeight * 3.4 / 6 },
-            { x: window.innerWidth * 0.15, y: window.innerHeight * 5.4 / 6 },
-            { x: window.innerWidth * 0.5, y: window.innerHeight * 5.2 / 6 },
-            { x: window.innerWidth * 0.9, y: window.innerHeight * 5.4 / 6 },
+            { x: this.scale.width * 0.1, y: this.scale.height * 2.5 / 6 },
+            { x: this.scale.width * 0.85, y: this.scale.height * 2.3 / 6 },
+            { x: this.scale.width * 0.2, y: this.scale.height * 3.3 / 6 },
+            { x: this.scale.width * 0.8, y: this.scale.height * 3.4 / 6 },
+            { x: this.scale.width * 0.15, y: this.scale.height * 5.4 / 6 },
+            { x: this.scale.width * 0.5, y: this.scale.height * 5.2 / 6 },
+            { x: this.scale.width * 0.9, y: this.scale.height * 5.4 / 6 },
         ];
 
         grassPositions.forEach(position => {
             const grass = this.add.image(position.x, position.y, 'grass');
-            const grassHeight = window.innerHeight / 15;
+            const grassHeight = this.scale.height / 15;
             grass.setDisplaySize(grass.width * (grassHeight / grass.height), grassHeight);
             grass.setDepth(-2);
         });
 
         // テキストを追加
-        const textStyle = { fontSize: '32px', color: '#0d6c0c', fontFamily: '"M PLUS 1p", sans-serif' };
-        const questionText = this.add.text(window.innerWidth / 2, 10, 'だれのかげかな？', textStyle);
+        const textStyle = { fontSize: Math.min(this.scale.width, this.scale.height) / 12, color: '#0d6c0c', fontFamily: '"M PLUS 1p", sans-serif' };
+        const questionText = this.add.text(this.scale.width / 2, 30, 'だれのかげかな？', textStyle);
         questionText.setOrigin(0.5, 0); // テキストを中央揃え
 
-        const isLandscape = window.innerWidth > window.innerHeight;
-        const animalWidth = isLandscape ? window.innerWidth * 0.8 / 3 : window.innerWidth * 0.8 / 2;
+        const isLandscape = this.scale.width > this.scale.height;
+        const animalWidth = isLandscape ? this.scale.width * 0.8 / 3 : this.scale.width * 0.8 / 2;
 
         // 正解の動物をランダムに選択
         const correctIndex = Phaser.Math.Between(0, 2);
         this.correctAnimalKey = ['elephant', 'lion', 'hippo'][correctIndex];
 
         // 影を中央、上部から1/4の位置に配置
-        this.shadow = this.add.image(window.innerWidth / 2, window.innerHeight * 1.2 / 4, `shadow-${this.correctAnimalKey}`);
+        this.shadow = this.add.image(this.scale.width / 2, this.scale.height * 1.2 / 4, `shadow-${this.correctAnimalKey}`);
         this.shadow.setDisplaySize(animalWidth, this.shadow.height * (animalWidth / this.shadow.width));
 
         if (isLandscape) {
             // 横長の場合、画面の下1/2を横に3等分して配置
             const positionsX = [
-                window.innerWidth / 6,  // 左
-                window.innerWidth / 2,  // 中央
-                (window.innerWidth * 5) / 6  // 右
+                this.scale.width / 6,  // 左
+                this.scale.width / 2,  // 中央
+                (this.scale.width * 5) / 6  // 右
             ];
             this.animals = [
-                this.add.image(positionsX[0], window.innerHeight * 3 / 4, 'elephant').setInteractive({ draggable: true }),
-                this.add.image(positionsX[1], window.innerHeight * 3 / 4, 'lion').setInteractive({ draggable: true }),
-                this.add.image(positionsX[2], window.innerHeight * 3 / 4, 'hippo').setInteractive({ draggable: true })
+                this.add.image(positionsX[0], this.scale.height * 3 / 4, 'elephant').setInteractive({ draggable: true }),
+                this.add.image(positionsX[1], this.scale.height * 3 / 4, 'lion').setInteractive({ draggable: true }),
+                this.add.image(positionsX[2], this.scale.height * 3 / 4, 'hippo').setInteractive({ draggable: true })
             ];
         } else {
             // 縦長の場合、画面の下1/2を縦に2等分して配置
             const positionsY = [
-                window.innerHeight * 6 / 8,  // 下
-                window.innerHeight * 4.5 / 8  // 上
+                this.scale.height * 6 / 8,  // 下
+                this.scale.height * 4.5 / 8  // 上
             ];
             this.animals = [
-                this.add.image(window.innerWidth / 2, positionsY[1], 'lion').setInteractive({ draggable: true }),
-                this.add.image(window.innerWidth * 1 / 4, positionsY[0], 'elephant').setInteractive({ draggable: true }),
-                this.add.image(window.innerWidth * 3 / 4, positionsY[0], 'hippo').setInteractive({ draggable: true })
+                this.add.image(this.scale.width / 2, positionsY[1], 'lion').setInteractive({ draggable: true }),
+                this.add.image(this.scale.width * 1 / 4, positionsY[0], 'elephant').setInteractive({ draggable: true }),
+                this.add.image(this.scale.width * 3 / 4, positionsY[0], 'hippo').setInteractive({ draggable: true })
             ];
         }
 
@@ -203,8 +203,8 @@ class ShadowGame extends Phaser.Scene {
                             this.time.delayedCall(500, () => {
                                 this.tweens.add({
                                     targets: [droppedAnimal, this.shadow],
-                                    x: window.innerWidth / 2,
-                                    y: window.innerHeight / 2,
+                                    x: this.scale.width / 2,
+                                    y: this.scale.height / 2,
                                     duration: 800,
                                     ease: 'Power2'
                                 });
@@ -244,14 +244,19 @@ class ShadowGame extends Phaser.Scene {
 
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: window.innerWidth * window.devicePixelRatio,
+    height: window.innerHeight * window.devicePixelRatio,
     scene: ShadowGame,
     backgroundColor: '#87CEEB',  // 背景色を水色に設定
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+    render: {
+        pixelArt: false,
+        antialias: true,
+        antialiasGL: true,
     }
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
