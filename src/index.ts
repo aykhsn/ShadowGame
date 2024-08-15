@@ -154,13 +154,15 @@ class ShadowGame extends Phaser.Scene {
     handleAnimalDrop(droppedAnimal: Phaser.GameObjects.Image) {
         if (droppedAnimal.texture.key === this.correctAnimalKey) {
             // 正解の場合
-            this.correctSound!.play();
-
-            this.time.delayedCall(900, () => {
+            this.time.delayedCall(1600, () => {
+                this.correctSound!.play();
+            });
+            
+            this.time.delayedCall(2500, () => {
                 this.yattaneVoice!.play();
             });
 
-            this.time.delayedCall(1700, () => {
+            this.time.delayedCall(3300, () => {
                 this.seikaiVoice!.play();
             });
 
@@ -169,48 +171,71 @@ class ShadowGame extends Phaser.Scene {
 
             this.tweens.add({
                 targets: droppedAnimal,
-                x: this.shadow!.x,
-                y: this.shadow!.y,
-                duration: 500,
-                ease: 'Power2',
+                y: `+=10`, // 右に10px
+                yoyo: true,
+                repeat: 6, // 3回揺れる
+                duration: 120,
+                ease: 'Sine.easeInOut',
                 onComplete: () => {
-                    // 不正解の動物をフェードアウトして消す
-                    this.animals.forEach(animal => {
-                        if (animal !== droppedAnimal) {
-                            this.tweens.add({
-                                targets: animal,
-                                alpha: 0,
-                                duration: 800,
-                                ease: 'Power2',
-                                onComplete: () => {
-                                    animal.destroy();  // フェードアウト後に削除
+                    this.tweens.add({
+                        targets: droppedAnimal,
+                        x: this.shadow!.x,
+                        y: this.shadow!.y,
+                        duration: 500,
+                        ease: 'Power2',
+                        onComplete: () => {
+                            // 不正解の動物をフェードアウトして消す
+                            this.animals.forEach(animal => {
+                                if (animal !== droppedAnimal) {
+                                    this.tweens.add({
+                                        targets: animal,
+                                        alpha: 0,
+                                        duration: 800,
+                                        ease: 'Power2',
+                                        onComplete: () => {
+                                            animal.destroy();  // フェードアウト後に削除
+                                        }
+                                    });
                                 }
                             });
+        
+                            // 0.5秒後に動物と影を中央に移動
+                            this.time.delayedCall(500, () => {
+                                this.tweens.add({
+                                    targets: [droppedAnimal, this.shadow],
+                                    x: window.innerWidth / 2,
+                                    y: window.innerHeight / 2,
+                                    duration: 800,
+                                    ease: 'Power2'
+                                });
+                            });
                         }
-                    });
-
-                    // 0.5秒後に動物と影を中央に移動
-                    this.time.delayedCall(500, () => {
-                        this.tweens.add({
-                            targets: [droppedAnimal, this.shadow],
-                            x: window.innerWidth / 2,
-                            y: window.innerHeight / 2,
-                            duration: 800,
-                            ease: 'Power2'
-                        });
-                    });
+                    }); 
                 }
             });
         } else {
-            // 不正解の場合、動物をフェードアウトして消す
-            this.wrongSound!.play(); // 不正解の音を再生
+            // 不正解の場合、動物をガタガタと揺れた後にフェードアウトして消す
+            this.time.delayedCall(1600, () => {
+                this.wrongSound!.play(); // 不正解の音を再生
+            });
+
             this.tweens.add({
                 targets: droppedAnimal,
-                alpha: 0,
-                duration: 800,
-                ease: 'Power2',
+                y: `+=10`, // 右に10px
+                yoyo: true,
+                repeat: 6, // 3回揺れる
+                duration: 120,
+                ease: 'Sine.easeInOut',
                 onComplete: () => {
-                    droppedAnimal.destroy();  // フェードアウト後に削除
+                    this.tweens.add({
+                        targets: droppedAnimal,
+                        alpha: 0,
+                        duration: 800,
+                        ease: 'Power2',
+                        onComplete: () => {
+                            droppedAnimal.destroy();  // フェードアウト後に削除
+                        }
+                    });
                 }
             });
         }
