@@ -182,18 +182,18 @@ class ShadowGame extends Phaser.Scene {
             this.time.delayedCall(1600, () => {
                 this.correctSound!.play();
             });
-            
+    
             this.time.delayedCall(2500, () => {
                 this.yattaneVoice!.play();
             });
-
+    
             this.time.delayedCall(3300, () => {
                 this.seikaiVoice!.play();
             });
-
+    
             droppedAnimal.disableInteractive();  // 正解の動物のインタラクティブ性を無効にする
             this.shadow!.disableInteractive();  // 影のインタラクティブ性も無効にする
-
+    
             this.tweens.add({
                 targets: droppedAnimal,
                 y: `+=10`, // 右に10px
@@ -223,11 +223,11 @@ class ShadowGame extends Phaser.Scene {
                                     });
                                 }
                             });
-
+    
                             // 0.5秒後に動物と影を中央に移動
                             this.time.delayedCall(500, () => {
                                 this.shadow?.destroy();
-
+    
                                 this.tweens.add({
                                     targets: droppedAnimal,
                                     x: this.scale.width / 2,
@@ -245,15 +245,20 @@ class ShadowGame extends Phaser.Scene {
                                                 ease: 'Sine.easeInOut',
                                                 onComplete: () => {
                                                     droppedAnimal.destroy();  // 完全に消す
+
+                                                    this.time.delayedCall(1500, () => {
+                                                        // 新しい問題を開始する
+                                                        this.startNewRound();
+                                                    });
                                                 }
                                             });
-
+    
                                             // 同じ動物を3匹右側から生成して左へ移動させる
                                             for (let i = 0; i < 5; i++) {
                                                 const cloneAnimal = this.add.image(this.scale.width + droppedAnimal.width, this.scale.height / 3 + Phaser.Math.Between(0, 4) * (this.scale.height / 8), droppedAnimal.texture.key);
                                                 cloneAnimal.setDisplaySize(droppedAnimal.width, droppedAnimal.height);
                                                 cloneAnimal.setDepth(droppedAnimal.depth);
-
+    
                                                 this.tweens.add({
                                                     targets: cloneAnimal,
                                                     x: -cloneAnimal.width,  // 左外へ移動
@@ -278,7 +283,7 @@ class ShadowGame extends Phaser.Scene {
             this.time.delayedCall(1600, () => {
                 this.wrongSound!.play(); // 不正解の音を再生
             });
-
+    
             this.tweens.add({
                 targets: droppedAnimal,
                 y: `+=10`, // 右に10px
@@ -300,6 +305,57 @@ class ShadowGame extends Phaser.Scene {
             });
         }
     }
+    
+    startNewRound() {
+        // 新しい動物のセットアップ
+        const newAnimals = ['elephant', 'lion', 'hippo'];
+        Phaser.Utils.Array.Shuffle(newAnimals);
+    
+        const isLandscape = this.scale.width > this.scale.height;
+        const animalWidth = isLandscape ? this.scale.width * 0.8 / 3 : this.scale.width * 0.8 / 2;
+    
+        const positionsX = isLandscape
+            ? [
+                  this.scale.width / 6,  // 左
+                  this.scale.width / 2,  // 中央
+                  (this.scale.width * 5) / 6  // 右
+              ]
+            : [
+                  this.scale.width * 1 / 4,  // 左
+                  this.scale.width / 2,  // 中央
+                  this.scale.width * 3 / 4  // 右
+              ];
+    
+        const positionsY = isLandscape
+            ? [this.scale.height * 3 / 4, this.scale.height * 3 / 4, this.scale.height * 3 / 4] // 横並び
+            : [
+                  this.scale.height * 6 / 8,  // 下
+                  this.scale.height * 4.5 / 8,  // 上
+                  this.scale.height * 6 / 8  // 下
+              ];
+    
+        this.animals = newAnimals.map((animalKey, index) => {
+            const animal = this.add.image(this.scale.width + animalWidth, positionsY[index], animalKey).setInteractive({ draggable: true });
+            animal.setDisplaySize(animalWidth, animal.height * (animalWidth / animal.width));
+    
+            this.tweens.add({
+                targets: animal,
+                x: positionsX[index], // スタート時の位置に動物を配置
+                duration: 1500,
+                ease: 'Power2',
+                onComplete: () => {
+                    animal.setInteractive(); // インタラクティブ性を再設定
+                }
+            });
+    
+            return animal;
+        });
+    
+        // 新しい影をセットアップ
+        this.correctAnimalKey = newAnimals[Phaser.Math.Between(0, 2)];
+        this.shadow = this.add.image(this.scale.width / 2, this.scale.height * 1.2 / 4, `shadow-${this.correctAnimalKey}`);
+        this.shadow.setDisplaySize(animalWidth, this.shadow.height * (animalWidth / this.shadow.width));
+    }      
 }
 
 const config: Phaser.Types.Core.GameConfig = {
