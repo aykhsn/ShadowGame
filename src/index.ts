@@ -30,6 +30,7 @@ class ShadowGame extends Phaser.Scene {
     private shadow: Phaser.GameObjects.Image | null = null;
     private correctAnimalKey: string = '';
     private currentDepth: number = 0; // 現在の最大深度を追跡
+    private isAnimating: boolean = false; // アニメーション中かどうかのフラグ
 
     private correctSound: Phaser.Sound.BaseSound | null = null;
     private seikaiVoice: Phaser.Sound.BaseSound | null = null;
@@ -154,6 +155,10 @@ class ShadowGame extends Phaser.Scene {
             animal.setDepth(index);
             this.input.setDraggable(animal); // ドラッグ可能にする
 
+            // 動物の初期位置を記憶
+            (animal as any).initialX = positionsX[index];
+            (animal as any).initialY = positionsY[index];
+
             this.tweens.add({
                 targets: animal,
                 x: positionsX[index],
@@ -174,15 +179,35 @@ class ShadowGame extends Phaser.Scene {
         
         this.input.on('dragstart', (pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.Image) => {
             // ドラッグを開始したときに、動物を最前面に移動
-            this.currentDepth += 1; // 深度を増加
-            gameObject.setDepth(this.currentDepth); // 現在の最大深度を設定
+            if (!this.isAnimating) {
+                this.currentDepth += 1; // 深度を増加
+                gameObject.setDepth(this.currentDepth); // 現在の最大深度を設定
+            }
         });
         
         this.input.on('dragend', (pointer: Phaser.Input.Pointer, gameObject: Phaser.GameObjects.Image) => {
-            if (this.checkOverlap(gameObject, this.shadow!)) {
-                this.handleAnimalDrop(gameObject);
+            if (!this.isAnimating) {
+                if (this.checkOverlap(gameObject, this.shadow!)) {
+                    this.handleAnimalDrop(gameObject);
+                } else {
+                    // ドラッグが終了しても影と重なっていなかった場合、元の位置に戻す
+                    this.tweens.add({
+                        targets: gameObject,
+                        x: (gameObject as any).initialX,
+                        y: (gameObject as any).initialY,
+                        duration: 300,
+                        ease: 'Power2'
+                    });
+                }
             } else {
-                // 影と重ならない場合、動物はそのままの位置に留まる
+                // アニメーション中であれば、元の位置に戻す
+                this.tweens.add({
+                    targets: gameObject,
+                    x: (gameObject as any).initialX,
+                    y: (gameObject as any).initialY,
+                    duration: 300,
+                    ease: 'Power2'
+                });
             }
         });
 
@@ -190,9 +215,11 @@ class ShadowGame extends Phaser.Scene {
         this.shadow = this.add.image(this.scale.width / 2, this.scale.height * 1.2 / 4, `shadow_${this.correctAnimalKey}`);
         this.shadow.setDisplaySize(animalWidth, this.shadow.height * (animalWidth / this.shadow.width));
         this.shadow.setDepth(-1);
+        this.isAnimating = false; // アニメーション中でない状態にリセット
     }
 
     handleAnimalDrop(droppedAnimal: Phaser.GameObjects.Image) {
+        this.isAnimating = true; // アニメーション中にフラグを立てる
         if (this.checkOverlap(droppedAnimal, this.shadow!)) {
             // ドロップ時に影と重なっていた場合、ぴったりと影の位置に合わせる
             this.tweens.add({
@@ -294,6 +321,7 @@ class ShadowGame extends Phaser.Scene {
         
                                                 // 新しいラウンドをスタート
                                                 this.time.delayedCall(3000, () => {
+                                                    this.isAnimating = false; // アニメーションが終了したらフラグをリセット
                                                     this.startNewRound();
                                                 });
                                             });
@@ -312,6 +340,7 @@ class ShadowGame extends Phaser.Scene {
                                         ease: 'Power2',
                                         onComplete: () => {
                                             droppedAnimal.destroy();  // 完全に消す
+                                            this.isAnimating = false; // アニメーションが終了したらフラグをリセット
                                         }
                                     });
                                 });
