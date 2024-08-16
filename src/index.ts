@@ -223,19 +223,54 @@ class ShadowGame extends Phaser.Scene {
                                     });
                                 }
                             });
-        
+
                             // 0.5秒後に動物と影を中央に移動
                             this.time.delayedCall(500, () => {
+                                this.shadow?.destroy();
+
                                 this.tweens.add({
-                                    targets: [droppedAnimal, this.shadow],
+                                    targets: droppedAnimal,
                                     x: this.scale.width / 2,
                                     y: this.scale.height / 2,
                                     duration: 800,
-                                    ease: 'Power2'
+                                    ease: 'Power2',
+                                    onComplete: () => {
+                                        // 1秒後に左へぴょんぴょんと移動して画面の外へ消える
+                                        this.time.delayedCall(1000, () => {
+                                            this.tweens.add({
+                                                targets: droppedAnimal,
+                                                x: -droppedAnimal.width,  // 画面の左外へ移動
+                                                yoyo: false, // 左右には揺れないようにする
+                                                duration: 1500,
+                                                ease: 'Sine.easeInOut',
+                                                onComplete: () => {
+                                                    droppedAnimal.destroy();  // 完全に消す
+                                                }
+                                            });
+
+                                            // 同じ動物を3匹右側から生成して左へ移動させる
+                                            for (let i = 0; i < 5; i++) {
+                                                const cloneAnimal = this.add.image(this.scale.width + droppedAnimal.width, this.scale.height / 3 + Phaser.Math.Between(0, 4) * (this.scale.height / 8), droppedAnimal.texture.key);
+                                                cloneAnimal.setDisplaySize(droppedAnimal.width, droppedAnimal.height);
+                                                cloneAnimal.setDepth(droppedAnimal.depth);
+
+                                                this.tweens.add({
+                                                    targets: cloneAnimal,
+                                                    x: -cloneAnimal.width,  // 左外へ移動
+                                                    duration: 1500,
+                                                    delay: i * 240,  // 順番に動き始めるように遅延を追加
+                                                    ease: 'Sine.easeInOut',
+                                                    onComplete: () => {
+                                                        cloneAnimal.destroy();  // 完全に消す
+                                                    }
+                                                });
+                                            }
+                                        });
+                                    }
                                 });
                             });
                         }
-                    }); 
+                    });
                 }
             });
         } else {
