@@ -36,6 +36,10 @@ class ShadowGame extends Phaser.Scene {
     private seikaiVoice: Phaser.Sound.BaseSound | null = null;
     private yattaneVoice: Phaser.Sound.BaseSound | null = null;
     private wrongSound: Phaser.Sound.BaseSound | null = null;
+    private dropSound: Phaser.Sound.BaseSound | null = null;
+    private cheersSound: Phaser.Sound.BaseSound | null = null;
+    private gatagataSound: Phaser.Sound.BaseSound | null = null;
+
 
     private animalKeys = [
         'bear', 'cat', 'cow', 'crocodile', 'dog', 'elephant', 'fox',
@@ -58,6 +62,9 @@ class ShadowGame extends Phaser.Scene {
         this.load.audio('seikaiVoice', 'assets/voice-seikai.mp3'); // 正解の音声を読み込む
         this.load.audio('yattaneVoice', 'assets/voice-yattane.mp3'); // やったねの音声を読み込む
         this.load.audio('wrongSound', 'assets/quiz-bu.mp3'); // 不正解の音を読み込む
+        this.load.audio('dropSound', 'assets/papa.mp3');
+        this.load.audio('cheersSound', 'assets/cheers.mp3');
+        this.load.audio('gatagataSound', 'assets/reminiscence.mp3');
     }
 
     create() {
@@ -66,6 +73,9 @@ class ShadowGame extends Phaser.Scene {
         this.seikaiVoice = this.sound.add('seikaiVoice');
         this.yattaneVoice = this.sound.add('yattaneVoice');
         this.wrongSound = this.sound.add('wrongSound');
+        this.dropSound = this.sound.add('dropSound');
+        this.cheersSound = this.sound.add('cheersSound');
+        this.gatagataSound = this.sound.add('gatagataSound');
 
         // 画面の上半分を水色、下半分を緑色に設定
         const upperBackground = this.add.rectangle(0, 0, this.scale.width, this.scale.height / 3, 0x87CEEB).setOrigin(0);
@@ -221,6 +231,7 @@ class ShadowGame extends Phaser.Scene {
     handleAnimalDrop(droppedAnimal: Phaser.GameObjects.Image) {
         this.isAnimating = true; // アニメーション中にフラグを立てる
         if (this.checkOverlap(droppedAnimal, this.shadow!)) {
+            this.dropSound!.play();
             // ドロップ時に影と重なっていた場合、ぴったりと影の位置に合わせる
             this.tweens.add({
                 targets: droppedAnimal,
@@ -229,6 +240,8 @@ class ShadowGame extends Phaser.Scene {
                 duration: 500,
                 ease: 'Power2',
                 onComplete: () => {
+                    this.gatagataSound!.play();
+
                     // ぴったり重なった後にガタガタと上下に揺れる
                     this.tweens.add({
                         targets: droppedAnimal,
@@ -290,6 +303,8 @@ class ShadowGame extends Phaser.Scene {
                                         onComplete: () => {
                                             // 1秒後に左へ移動
                                             this.time.delayedCall(1000, () => {
+                                                this.cheersSound!.play();
+
                                                 this.tweens.add({
                                                     targets: droppedAnimal,
                                                     x: -droppedAnimal.width,  // 画面の左外へ移動
