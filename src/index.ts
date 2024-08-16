@@ -140,17 +140,18 @@ class ShadowGame extends Phaser.Scene {
         const animalWidth = isLandscape ? this.scale.width * 0.8 / 3 : this.scale.width * 0.8 / 2;
 
         const positionsX = isLandscape
-            ? [this.scale.width / 6, this.scale.width / 2, (this.scale.width * 5) / 6]
-            : [this.scale.width * 1 / 4, this.scale.width / 2, this.scale.width * 3 / 4];
+            ? [this.scale.width / 2, this.scale.width / 6, (this.scale.width * 5) / 6]
+            : [this.scale.width / 2, this.scale.width * 1 / 4, this.scale.width * 3 / 4];
 
         const positionsY = isLandscape
             ? [this.scale.height * 3 / 4, this.scale.height * 3 / 4, this.scale.height * 3 / 4]
-            : [this.scale.height * 6 / 8, this.scale.height * 4.5 / 8, this.scale.height * 6 / 8];
+            : [this.scale.height * 4.5 / 8, this.scale.height * 6 / 8, this.scale.height * 6 / 8];
 
         // 選ばれた動物を配置
         this.animals = selectedAnimals.map((animalKey, index) => {
             const animal = this.add.image(this.scale.width + animalWidth, positionsY[index], `animal_${animalKey}`).setInteractive({ draggable: true });
             animal.setDisplaySize(animalWidth, animal.height * (animalWidth / animal.width));
+            animal.setDepth(index);
             this.input.setDraggable(animal); // ドラッグ可能にする
 
             this.tweens.add({
@@ -188,6 +189,7 @@ class ShadowGame extends Phaser.Scene {
         // 正解の影を配置
         this.shadow = this.add.image(this.scale.width / 2, this.scale.height * 1.2 / 4, `shadow_${this.correctAnimalKey}`);
         this.shadow.setDisplaySize(animalWidth, this.shadow.height * (animalWidth / this.shadow.width));
+        this.shadow.setDepth(-1);
     }
 
     handleAnimalDrop(droppedAnimal: Phaser.GameObjects.Image) {
