@@ -116,11 +116,6 @@ class ShadowGame extends Phaser.Scene {
             grass.setDepth(-2);
         });
 
-        // テキストを追加
-        const textStyle = { fontSize: Math.min(this.scale.width, this.scale.height) / 12, color: '#0d6c0c', fontFamily: '"M PLUS 1p", sans-serif' };
-        const questionText = this.add.text(this.scale.width / 2, 30, 'だれのかげかな？', textStyle);
-        questionText.setOrigin(0.5, 0); // テキストを中央揃え
-
         this.startNewRound();
     }
 
