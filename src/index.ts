@@ -7,21 +7,42 @@ class StartScene extends Phaser.Scene {
 
     preload() {
         this.load.image('startButton', 'assets/button-start.png'); // スタートボタンの画像を読み込む
+        this.load.image('titleImage', 'assets/darenokagekana.png');
     }
 
     create() {
+        // 水玉模様の背景を作成
+        this.createPolkaDotBackground();
+
+        // タイトル画像を配置
+        const title = this.add.image(this.scale.width / 2, this.scale.height * 0.7 / 2, 'titleImage');
+        const titleWidth = Math.min(this.scale.width, this.scale.height * 4 / 6, 1200); // タイトル画像の幅を調整
+        const titleHeight = title.height * (titleWidth / title.width);
+        title.setDisplaySize(titleWidth, titleHeight);
+
         // スタートボタンを配置
-        const button = this.add.image(this.scale.width / 2, this.scale.height / 2, 'startButton');
+        const button = this.add.image(this.scale.width / 2, (this.scale.height * 0.9 / 2) + (titleHeight / 2), 'startButton');
+        const buttonWidth = Math.min(this.scale.width, this.scale.height, 1200) * 1.2 / 2;
+        button.setDisplaySize(buttonWidth, button.height * (buttonWidth / button.width));
         button.setInteractive();
 
         // スタートボタンがクリックされたときにShadowGameシーンを開始
         button.on('pointerdown', () => {
             this.scene.start('shadow-game');
         });
+    }
 
-        // ボタンのサイズを調整
-        const buttonWidth = Math.min(this.scale.width, this.scale.height) / 2;
-        button.setDisplaySize(buttonWidth, button.height * (buttonWidth / button.width));
+    createPolkaDotBackground() {
+        const dotRadius = 10; // ドットの半径
+        const spacing = 50; // ドット間のスペース
+
+        // 斜めの水玉模様を作成
+        for (let y = 0; y < this.scale.height + spacing; y += spacing) {
+            for (let x = 0; x < this.scale.width + spacing; x += spacing) {
+                const offsetX = y % (spacing * 2) === 0 ? 0 : spacing / 2;
+                this.add.circle(x + offsetX, y, dotRadius, 0xffffff, 0.5);
+            }
+        }
     }
 }
 
@@ -31,15 +52,20 @@ class ShadowGame extends Phaser.Scene {
     private correctAnimalKey: string = '';
     private currentDepth: number = 0; // 現在の最大深度を追跡
     private isAnimating: boolean = false; // アニメーション中かどうかのフラグ
+    private firstRound: boolean = true; // 最初のラウンドフラグ
 
+    private startSound: Phaser.Sound.BaseSound | null = null;
+    private descriptionSound: Phaser.Sound.BaseSound | null = null;
     private correctSound: Phaser.Sound.BaseSound | null = null;
     private seikaiVoice: Phaser.Sound.BaseSound | null = null;
     private yattaneVoice: Phaser.Sound.BaseSound | null = null;
     private wrongSound: Phaser.Sound.BaseSound | null = null;
     private zannenSound: Phaser.Sound.BaseSound | null = null;
+    private feeldownSound: Phaser.Sound.BaseSound | null = null;
     private dropSound: Phaser.Sound.BaseSound | null = null;
     private cheersSound: Phaser.Sound.BaseSound | null = null;
     private gatagataSound: Phaser.Sound.BaseSound | null = null;
+    private descriptionSoundTimer: Phaser.Time.TimerEvent | null = null;
 
     private animalKeys = [
         'bear', 'cat', 'cow', 'crocodile', 'dog', 'elephant', 'fox',
@@ -64,10 +90,13 @@ class ShadowGame extends Phaser.Scene {
         this.load.image('star', 'assets/star-s_gray.png'); // 星の画像を読み込む
         this.load.image('starYellow', 'assets/star-s_yellow.png'); // 黄色い星の画像を読み込む
 
+        this.load.audio('startSound', 'assets/voice-darenokagekana.mp3');
+        this.load.audio('descriptionSound', 'assets/voice-darenokagekana_description.mp3');
         this.load.audio('correctSound', 'assets/quiz-pinpon.mp3'); // 正解の音を読み込む
         this.load.audio('seikaiVoice', 'assets/voice-seikai.mp3'); // 正解の音声を読み込む
         this.load.audio('yattaneVoice', 'assets/voice-yattane.mp3'); // やったねの音声を読み込む
         this.load.audio('wrongSound', 'assets/quiz-bu.mp3'); // 不正解の音を読み込む
+        this.load.audio('feeldownSound', 'assets/feeldown.mp3');
         this.load.audio('dropSound', 'assets/papa.mp3');
         this.load.audio('cheersSound', 'assets/cheers.mp3');
         this.load.audio('gatagataSound', 'assets/reminiscence.mp3');
@@ -77,10 +106,13 @@ class ShadowGame extends Phaser.Scene {
 
     create() {
         // サウンドオブジェクトを作成
+        this.startSound = this.sound.add('startSound');
+        this.descriptionSound = this.sound.add('descriptionSound');
         this.correctSound = this.sound.add('correctSound');
         this.seikaiVoice = this.sound.add('seikaiVoice');
         this.yattaneVoice = this.sound.add('yattaneVoice');
         this.wrongSound = this.sound.add('wrongSound');
+        this.feeldownSound = this.sound.add('feeldownSound');
         this.zannenSound = this.sound.add('zannenSound');
         this.dropSound = this.sound.add('dropSound');
         this.cheersSound = this.sound.add('cheersSound');
@@ -154,6 +186,14 @@ class ShadowGame extends Phaser.Scene {
         if (this.shadow) {
             this.shadow.destroy();
             this.shadow = null;
+        }
+
+        this.startSound!.play();
+        if (this.firstRound) {
+            this.descriptionSoundTimer = this.time.delayedCall(2000, () => {
+                this.descriptionSound!.play();
+            });
+            this.firstRound = false; // 最初のラウンドを終了したとマーク
         }
 
         // 16種類の動物からランダムに3匹選ぶ
@@ -251,7 +291,23 @@ class ShadowGame extends Phaser.Scene {
     handleAnimalDrop(droppedAnimal: Phaser.GameObjects.Image) {
         this.isAnimating = true; // アニメーション中にフラグを立てる
         if (this.checkOverlap(droppedAnimal, this.shadow!)) {
+
             this.dropSound!.play();
+
+            // サウンドを止める
+            if (this.descriptionSound && this.descriptionSound.isPlaying) {
+                this.descriptionSound.stop();
+            }
+            if (this.startSound && this.startSound.isPlaying) {
+                this.startSound.stop();
+            }
+
+            // descriptionSoundの遅延再生をキャンセル
+            if (this.descriptionSoundTimer) {
+                this.descriptionSoundTimer.remove();
+                this.descriptionSoundTimer = null;
+            }
+            
             // ドロップ時に影と重なっていた場合、ぴったりと影の位置に合わせる
             this.tweens.add({
                 targets: droppedAnimal,
@@ -344,10 +400,10 @@ class ShadowGame extends Phaser.Scene {
                                                     }
                                                 });
         
-                                                // 同じ動物を3匹右側から生成して左へ移動させる
+                                                // 同じ動物を5匹右側から生成して左へ移動させる
                                                 for (let i = 0; i < 5; i++) {
                                                     const cloneAnimal = this.add.image(this.scale.width + droppedAnimal.width, this.scale.height / 3 + Phaser.Math.Between(0, 4) * (this.scale.height / 8), droppedAnimal.texture.key);
-                                                    cloneAnimal.setDisplaySize(droppedAnimal.width, droppedAnimal.height);
+                                                    cloneAnimal.setDisplaySize(droppedAnimal.displayWidth, droppedAnimal.displayHeight);
                                                     cloneAnimal.setDepth(droppedAnimal.depth);
         
                                                     this.tweens.add({
@@ -365,6 +421,13 @@ class ShadowGame extends Phaser.Scene {
                                                 // 新しいラウンドをスタート
                                                 this.time.delayedCall(3000, () => {
                                                     this.isAnimating = false; // アニメーションが終了したらフラグをリセット
+
+                                                    // 5問正解したらコンプリートシーンへ移動
+                                                    if (this.correctCount === 5) {
+                                                        this.scene.start('complete-scene');
+                                                        return;
+                                                    }
+                                                    
                                                     this.startNewRound();
                                                 });
                                             });
@@ -378,6 +441,10 @@ class ShadowGame extends Phaser.Scene {
 
                                     this.time.delayedCall(1000, () => {
                                         this.zannenSound!.play();
+                                    });
+
+                                    this.time.delayedCall(3000, () => {
+                                        this.feeldownSound!.play();
                                     });
 
                                     // 正解の動物をフェードインさせる
@@ -461,11 +528,40 @@ class ShadowGame extends Phaser.Scene {
     }
 }
 
+class CompleteScene extends Phaser.Scene {
+    constructor() {
+        super('complete-scene');
+    }
+
+    create() {        
+        // コンプリートメッセージを表示
+        const message = this.add.text(this.scale.width / 2, this.scale.height / 2, 'Congratulations!\nYou completed the game!', {
+            fontSize: '64px',
+            color: '#ffffff',
+            fontFamily: 'Arial',
+            align: 'center'
+        });
+        message.setOrigin(0.5);
+
+        // 再スタートボタン
+        const restartButton = this.add.text(this.scale.width / 2, this.scale.height / 2 + 100, 'Play Again', {
+            fontSize: '32px',
+            color: '#ffffff',
+            fontFamily: 'Arial',
+        }).setInteractive();
+        restartButton.setOrigin(0.5);
+
+        restartButton.on('pointerdown', () => {
+            this.scene.start('start-scene');
+        });
+    }
+}
+
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     width: window.innerWidth * window.devicePixelRatio,
     height: window.innerHeight * window.devicePixelRatio,
-    scene: [StartScene, ShadowGame],
+    scene: [StartScene, ShadowGame, CompleteScene],
     backgroundColor: '#87CEEB',  // 背景色を水色に設定
     scale: {
         mode: Phaser.Scale.FIT,
