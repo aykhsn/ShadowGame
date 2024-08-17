@@ -47,6 +47,9 @@ class ShadowGame extends Phaser.Scene {
         'pig', 'rabbit', 'zebra'
     ];
 
+    private stars: Phaser.GameObjects.Image[] = []; // 星の配列
+    private correctCount: number = 0; // 正解数をカウント
+
     constructor() {
         super('shadow-game');
     }
@@ -58,6 +61,9 @@ class ShadowGame extends Phaser.Scene {
         });
         this.load.image('tree', 'assets/tree.png'); // 木の画像を読み込む
         this.load.image('grass', 'assets/grass.png'); // 草の画像を読み込む
+        this.load.image('star', 'assets/star-s_gray.png'); // 星の画像を読み込む
+        this.load.image('starYellow', 'assets/star-s_yellow.png'); // 黄色い星の画像を読み込む
+
         this.load.audio('correctSound', 'assets/quiz-pinpon.mp3'); // 正解の音を読み込む
         this.load.audio('seikaiVoice', 'assets/voice-seikai.mp3'); // 正解の音声を読み込む
         this.load.audio('yattaneVoice', 'assets/voice-yattane.mp3'); // やったねの音声を読み込む
@@ -66,6 +72,7 @@ class ShadowGame extends Phaser.Scene {
         this.load.audio('cheersSound', 'assets/cheers.mp3');
         this.load.audio('gatagataSound', 'assets/reminiscence.mp3');
         this.load.audio('zannenSound', 'assets/voice-zannenchigauyo.mp3');
+        
     }
 
     create() {
@@ -117,6 +124,15 @@ class ShadowGame extends Phaser.Scene {
             grass.setDisplaySize(grass.width * (grassHeight / grass.height), grassHeight);
             grass.setDepth(-2);
         });
+
+        // 星を配置
+        const starWidth = this.scale.width / 22;
+        const starXStart = this.scale.width / 2 - (starWidth * 3);
+        for (let i = 0; i < 5; i++) {
+            const star = this.add.image(starXStart + i * starWidth * 1.5, starWidth, 'star');
+            star.setDisplaySize(starWidth, starWidth * star.height / star.width);
+            this.stars.push(star);
+        }
 
         this.startNewRound();
     }
@@ -267,6 +283,14 @@ class ShadowGame extends Phaser.Scene {
     
                                 this.time.delayedCall(2900, () => {
                                     this.seikaiVoice!.play();
+                                });
+
+                                // 正解数に応じて星を黄色に変更
+                                this.time.delayedCall(3500, () => {
+                                    if (this.correctCount < this.stars.length) {
+                                        this.stars[this.correctCount].setTexture('starYellow');
+                                        this.correctCount++;
+                                    }
                                 });
     
                                 droppedAnimal.disableInteractive();  // 正解の動物のインタラクティブ性を無効にする
