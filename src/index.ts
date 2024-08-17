@@ -36,10 +36,10 @@ class ShadowGame extends Phaser.Scene {
     private seikaiVoice: Phaser.Sound.BaseSound | null = null;
     private yattaneVoice: Phaser.Sound.BaseSound | null = null;
     private wrongSound: Phaser.Sound.BaseSound | null = null;
+    private zannenSound: Phaser.Sound.BaseSound | null = null;
     private dropSound: Phaser.Sound.BaseSound | null = null;
     private cheersSound: Phaser.Sound.BaseSound | null = null;
     private gatagataSound: Phaser.Sound.BaseSound | null = null;
-
 
     private animalKeys = [
         'bear', 'cat', 'cow', 'crocodile', 'dog', 'elephant', 'fox',
@@ -65,6 +65,7 @@ class ShadowGame extends Phaser.Scene {
         this.load.audio('dropSound', 'assets/papa.mp3');
         this.load.audio('cheersSound', 'assets/cheers.mp3');
         this.load.audio('gatagataSound', 'assets/reminiscence.mp3');
+        this.load.audio('zannenSound', 'assets/voice-zannenchigauyo.mp3');
     }
 
     create() {
@@ -73,6 +74,7 @@ class ShadowGame extends Phaser.Scene {
         this.seikaiVoice = this.sound.add('seikaiVoice');
         this.yattaneVoice = this.sound.add('yattaneVoice');
         this.wrongSound = this.sound.add('wrongSound');
+        this.zannenSound = this.sound.add('zannenSound');
         this.dropSound = this.sound.add('dropSound');
         this.cheersSound = this.sound.add('cheersSound');
         this.gatagataSound = this.sound.add('gatagataSound');
@@ -220,6 +222,13 @@ class ShadowGame extends Phaser.Scene {
         this.shadow = this.add.image(this.scale.width / 2, this.scale.height * 1.2 / 4, `shadow_${this.correctAnimalKey}`);
         this.shadow.setDisplaySize(animalWidth, this.shadow.height * (animalWidth / this.shadow.width));
         this.shadow.setDepth(-1);
+        this.shadow.setAlpha(0); // 最初は透明
+        this.tweens.add({
+            targets: this.shadow,
+            alpha: 1,
+            duration: 800,
+            ease: 'Power2'
+        });
         this.isAnimating = false; // アニメーション中でない状態にリセット
     }
 
@@ -343,6 +352,31 @@ class ShadowGame extends Phaser.Scene {
                                 this.time.delayedCall(1200, () => {
                                     this.wrongSound!.play(); // 不正解の音を再生
 
+                                    this.time.delayedCall(1000, () => {
+                                        this.zannenSound!.play();
+                                    });
+
+                                    // 正解の動物をフェードインさせる
+                                    const correctAnimal = this.add.image(this.shadow!.x, this.shadow!.y, `animal_${this.correctAnimalKey}`);
+                                    correctAnimal.setDisplaySize(this.shadow!.displayWidth, this.shadow!.displayHeight);
+                                    correctAnimal.setAlpha(0); // 最初は透明
+                                    this.tweens.add({
+                                        targets: correctAnimal,
+                                        alpha: 1,
+                                        duration: 800,
+                                        ease: 'Power2'
+                                    });
+
+                                    this.tweens.add({
+                                        targets: this.shadow,
+                                        alpha: 0,
+                                        duration: 400,
+                                        ease: 'Power2',
+                                        onComplete: () => {
+                                            this.shadow!.destroy();  // フェードアウト後に削除
+                                        }
+                                    });
+
                                     this.tweens.add({
                                         targets: droppedAnimal,
                                         alpha: 0,
@@ -350,7 +384,41 @@ class ShadowGame extends Phaser.Scene {
                                         ease: 'Power2',
                                         onComplete: () => {
                                             droppedAnimal.destroy();  // 完全に消す
-                                            this.isAnimating = false; // アニメーションが終了したらフラグをリセット
+
+                                            // 他の動物を左に移動して画面外に消す
+                                            this.time.delayedCall(1000, () => {
+                                                this.animals.forEach(animal => {
+                                                    if (animal !== droppedAnimal) {
+                                                        this.tweens.add({
+                                                            targets: animal,
+                                                            x: -animal.width,
+                                                            duration: 1500,
+                                                            ease: 'Sine.easeInOut',
+                                                            onComplete: () => {
+                                                                animal.destroy(); // 完全に消す
+                                                            }
+                                                        });
+                                                    }
+                                                });
+
+                                                this.tweens.add({
+                                                    targets: correctAnimal,
+                                                    x: -correctAnimal.width,
+                                                    duration: 1500,
+                                                    ease: 'Sine.easeInOut',
+                                                    onComplete: () => {
+                                                        correctAnimal.destroy(); // 完全に消す
+                                                    }
+                                                });
+
+                                                this.isAnimating = false; // アニメーションが終了したらフラグをリセット
+
+                                                // 新しいラウンドをスタート
+                                                this.time.delayedCall(3000, () => {
+                                                    this.isAnimating = false; // アニメーションが終了したらフラグをリセット
+                                                    this.startNewRound();
+                                                });
+                                            });
                                         }
                                     });
                                 });
@@ -360,7 +428,7 @@ class ShadowGame extends Phaser.Scene {
                 }
             });
         }
-    }           
+    }
 
     checkOverlap(spriteA: Phaser.GameObjects.Image, spriteB: Phaser.GameObjects.Image) {
         const boundsA = spriteA.getBounds();
