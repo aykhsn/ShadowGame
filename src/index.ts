@@ -127,7 +127,7 @@ class ShadowGame extends Phaser.Scene {
 
         // 星を配置
         const starWidth = this.scale.width / 22;
-        const starXStart = this.scale.width / 2 - (starWidth * 3);
+        const starXStart = this.scale.width - (starWidth * 7);
         for (let i = 0; i < 5; i++) {
             const star = this.add.image(starXStart + i * starWidth * 1.5, starWidth, 'star');
             star.setDisplaySize(starWidth, starWidth * star.height / star.width);
