@@ -58,6 +58,7 @@ class ShadowGame extends Phaser.Scene {
     private currentDepth: number = 0; // 現在の最大深度を追跡
     private isAnimating: boolean = false; // アニメーション中かどうかのフラグ
     private firstRound: boolean = true; // 最初のラウンドフラグ
+    private gameCount: number = 3;
 
     private startSound: Phaser.Sound.BaseSound | null = null;
     private descriptionSound: Phaser.Sound.BaseSound | null = null;
@@ -71,6 +72,7 @@ class ShadowGame extends Phaser.Scene {
     private cheersSound: Phaser.Sound.BaseSound | null = null;
     private gatagataSound: Phaser.Sound.BaseSound | null = null;
     private descriptionSoundTimer: Phaser.Time.TimerEvent | null = null;
+    private completeSound: Phaser.Sound.BaseSound | null = null;
 
     private animalKeys = [
         'bear', 'cat', 'cow', 'crocodile', 'dog', 'elephant', 'fox',
@@ -109,6 +111,7 @@ class ShadowGame extends Phaser.Scene {
         this.load.image('grass', 'assets/grass.png'); // 草の画像を読み込む
         this.load.image('star', 'assets/star-s_gray.png'); // 星の画像を読み込む
         this.load.image('starYellow', 'assets/star-s_yellow.png'); // 黄色い星の画像を読み込む
+        this.load.image('retryButton', 'assets/button-retry.png');
 
         this.load.audio('startSound', 'assets/voice-darenokagekana.mp3');
         this.load.audio('descriptionSound', 'assets/voice-darenokagekana_description.mp3');
@@ -120,6 +123,7 @@ class ShadowGame extends Phaser.Scene {
         this.load.audio('dropSound', 'assets/papa.mp3');
         this.load.audio('cheersSound', 'assets/cheers.mp3');
         this.load.audio('gatagataSound', 'assets/reminiscence.mp3');
+        this.load.audio('completeSound', 'assets/tettere.mp3');
         this.load.audio('zannenSound', 'assets/voice-zannenchigauyo.mp3');
     }
 
@@ -136,6 +140,7 @@ class ShadowGame extends Phaser.Scene {
         this.dropSound = this.sound.add('dropSound');
         this.cheersSound = this.sound.add('cheersSound');
         this.gatagataSound = this.sound.add('gatagataSound');
+        this.completeSound = this.sound.add('completeSound');
 
         // 画面の上半分を水色、下半分を緑色に設定
         const upperBackground = this.add.rectangle(0, 0, this.scale.width, this.scale.height / 3, 0x87CEEB).setOrigin(0);
@@ -178,8 +183,8 @@ class ShadowGame extends Phaser.Scene {
 
         // 星を配置
         const starWidth = this.scale.width / 22;
-        const starXStart = this.scale.width - (starWidth * 7);
-        for (let i = 0; i < 5; i++) {
+        const starXStart = this.scale.width - (starWidth * (this.gameCount + 2));
+        for (let i = 0; i < this.gameCount; i++) {
             const star = this.add.image(starXStart + i * starWidth * 1.5, starWidth, 'star');
             star.setDisplaySize(starWidth, starWidth * star.height / star.width);
             this.stars.push(star);
@@ -189,9 +194,9 @@ class ShadowGame extends Phaser.Scene {
     }
 
     startNewRound() {
-        // 正解数が5に達した場合はコンプリートシーンへ移動
-        if (this.correctCount >= 5) {
-            this.scene.start('complete-scene');
+        // 正解数が5に達した場合はポップアップを表示
+        if (this.correctCount >= this.gameCount) {
+            this.showCompletePopup();
             return; // これ以降の処理を行わない
         }
 
@@ -449,10 +454,10 @@ class ShadowGame extends Phaser.Scene {
                                                 this.time.delayedCall(3000, () => {
                                                     this.isAnimating = false; // アニメーションが終了したらフラグをリセット
 
-                                                    // 5問正解したらコンプリートシーンへ移動
-                                                    if (this.correctCount === 5) {
-                                                        this.scene.start('complete-scene');
-                                                        return;
+                                                    // 正解数が5に達した場合はポップアップを表示
+                                                    if (this.correctCount >= this.gameCount) {
+                                                        this.showCompletePopup();
+                                                        return; // これ以降の処理を行わない
                                                     }
 
                                                     this.startNewRound();
@@ -553,59 +558,52 @@ class ShadowGame extends Phaser.Scene {
         const boundsB = spriteB.getBounds();
         return Phaser.Geom.Intersects.RectangleToRectangle(boundsA, boundsB);
     }
-}
 
-class CompleteScene extends Phaser.Scene {
-    private completeSound: Phaser.Sound.BaseSound | null = null;
-    private buttonSound: Phaser.Sound.BaseSound | null = null;
-
-    constructor() {
-        super('complete-scene');
-    }
-
-    preload() {
-        // tettere.mp3を読み込む
-        this.load.audio('completeSound', 'assets/tettere.mp3');
-        // リトライボタンの画像を読み込む
-        this.load.image('retryButton', 'assets/button-retry.png');
-        this.load.audio('buttonSound', 'assets/chiroriro.mp3');
-    }
-
-    create() {        
-        // サウンドオブジェクトを作成
-        this.completeSound = this.sound.add('completeSound');
-        this.buttonSound = this.sound.add('buttonSound');
-
+    showCompletePopup() {
+        // tettere.mp3を再生
+        this.sound.add('completeSound')?.play();
+    
+        // 黒い透明のオーバーレイを追加
+        const overlay = this.add.graphics();
+        overlay.fillStyle(0x000000, 0.5); // 黒の半透明
+        overlay.fillRect(0, 0, this.scale.width, this.scale.height); // 画面全体を覆う
+        overlay.setDepth(9); // ポップアップ背景より奥に配置
+    
+        // ポップアップの背景を表示
+        const popupBackground = this.add.graphics();
+        popupBackground.fillStyle(0xffffff, 1); // 白色の背景
+        popupBackground.fillRoundedRect(this.scale.width / 5, this.scale.height / 4, this.scale.width * 3 / 5, this.scale.height / 2, 20);
+        popupBackground.setDepth(10); // ポップアップの前面に配置
+    
         // コンプリートメッセージを表示
-        const message = this.add.text(this.scale.width / 2, this.scale.height / 2 - 100, 'Congratulations!\nYou completed the game!', {
-            fontSize: '64px',
-            color: '#ffffff',
+        const message = this.add.text(this.scale.width / 2, this.scale.height / 2 - 100, 'ゲームクリア', {
+            fontSize: '48px',
+            color: '#000000', // テキストを黒に変更
             fontFamily: 'Arial',
             align: 'center'
         });
         message.setOrigin(0.5);
-
-        // サウンドを再生
-        this.completeSound!.play();
-
+        message.setDepth(11); // ポップアップの上に表示
+    
         // リトライボタンを画像として配置
-        const buttonWidth = Math.min(this.scale.width, this.scale.height, 1200) * 1.2 / 2;
-        const retryButton = this.add.image(this.scale.width / 2, (this.scale.height * 0.9 / 2) + 100, 'retryButton');
+        const buttonWidth = this.scale.width / 2;
+        const retryButton = this.add.image(this.scale.width / 2, this.scale.height * 2 / 3, 'retryButton');
         retryButton.setDisplaySize(buttonWidth, retryButton.height * (buttonWidth / retryButton.width));
         retryButton.setInteractive();
-
+        retryButton.setDepth(11); // ポップアップの上に表示
+    
         retryButton.on('pointerdown', () => {
-            this.buttonSound!.play();
-            this.scene.start('shadow-game');
+            this.sound.add('buttonSound')?.play();
+            this.scene.restart(); // シーンを再スタート
         });
-    }
+    }    
 }
 
 const config: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
     width: window.innerWidth * window.devicePixelRatio,
     height: window.innerHeight * window.devicePixelRatio,
-    scene: [StartScene, ShadowGame, CompleteScene],
+    scene: [StartScene, ShadowGame],
     backgroundColor: '#87CEEB',  // 背景色を水色に設定
     scale: {
         mode: Phaser.Scale.FIT,
