@@ -63,7 +63,7 @@ class ShadowGame extends Phaser.Scene {
     private currentDepth: number = 0; // 現在の最大深度を追跡
     private isAnimating: boolean = false; // アニメーション中かどうかのフラグ
     private firstRound: boolean = true; // 最初のラウンドフラグ
-    private gameCount: number = 1;
+    private gameCount: number = 7;
 
     private startSound: Phaser.Sound.BaseSound | null = null;
     private descriptionSound: Phaser.Sound.BaseSound | null = null;
@@ -576,11 +576,11 @@ class ShadowGame extends Phaser.Scene {
         // tettere.mp3を再生
         this.sound.add('completeSound')?.play();
 
-        this.time.delayedCall(1600, () => {
+        this.time.delayedCall(2000, () => {
             this.sound.add('omedetoSound')?.play();
         });
 
-        this.time.delayedCall(3200, () => {
+        this.time.delayedCall(3600, () => {
             this.sound.add('ganbattaneSound')?.play();
         });
     
