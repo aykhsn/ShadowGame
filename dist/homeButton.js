@@ -18,7 +18,7 @@ class HomeButton {
 
     createHomeButton() {
         this.homeButton = this.scene.add.image(10, 10, 'home-button');
-        const homeButtonWidth = Math.min(this.scene.scale.width, this.scene.scale.height) / 12;
+        const homeButtonWidth = Math.min(this.scene.scale.width, this.scene.scale.height, 1000) / 12;
         const homeButtonHeight = this.homeButton.height * (homeButtonWidth / this.homeButton.width);
         
         this.homeButton.setDisplaySize(homeButtonWidth, homeButtonHeight)
