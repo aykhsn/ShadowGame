@@ -2,12 +2,21 @@ import Phaser from 'phaser';
 
 class StartScene extends Phaser.Scene {
     private buttonSound: Phaser.Sound.BaseSound | null = null;
+    private homeButton: HomeButton | null = null;
 
     constructor() {
         super('start-scene');
     }
 
     preload() {
+        // HomeButton の関連リソースをプリロード
+        this.load.image('home-button', 'assets/home-button.png');
+        this.load.image('modal-text', 'assets/modal-text.png');
+        this.load.image('home-yes', 'assets/button-yes.png');
+        this.load.image('home-no', 'assets/button-no.png');
+        this.load.image('modal-close', 'assets/modal-close.png');
+
+        // Game
         this.load.image('startButton', 'assets/button-start.png'); // スタートボタンの画像を読み込む
         this.load.image('titleImage', 'assets/darenokagekana.png');
         this.load.audio('buttonSound', 'assets/chiroriro.mp3');
@@ -15,6 +24,9 @@ class StartScene extends Phaser.Scene {
 
     create() {
         this.buttonSound = this.sound.add('buttonSound');
+
+        // HomeButton インスタンスを作成
+        this.homeButton = new HomeButton(this);
 
         // 白く透明な円の背景を追加
         const circleBackground = this.add.circle(this.scale.width / 2, this.scale.height / 2, Math.min(this.scale.width, this.scale.height) * 0.4, 0xffffff, 0.6);
@@ -80,6 +92,8 @@ class ShadowGame extends Phaser.Scene {
     private omedetoSound: Phaser.Sound.BaseSound | null = null;
     private ganbattaneSound: Phaser.Sound.BaseSound | null = null;
     private descriptionSoundTimer: Phaser.Time.TimerEvent | null = null;
+
+    private homeButton: HomeButton | null = null;
 
     private animalKeys = [
         'bear', 'cat', 'cow', 'crocodile', 'dog', 'elephant', 'fox',
@@ -154,6 +168,9 @@ class ShadowGame extends Phaser.Scene {
         this.completeSound = this.sound.add('completeSound');
         this.omedetoSound = this.sound.add('omedetoSound');
         this.ganbattaneSound = this.sound.add('ganbattaneSound');
+
+        // HomeButton インスタンスを作成
+        this.homeButton = new HomeButton(this);
 
         // 画面の上半分を水色、下半分を緑色に設定
         const upperBackground = this.add.rectangle(0, 0, this.scale.width, this.scale.height / 3, 0x87CEEB).setOrigin(0);
@@ -588,27 +605,26 @@ class ShadowGame extends Phaser.Scene {
         const overlay = this.add.graphics();
         overlay.fillStyle(0x000000, 0.5); // 黒の半透明
         overlay.fillRect(0, 0, this.scale.width, this.scale.height); // 画面全体を覆う
-        overlay.setDepth(9); // ポップアップ背景より奥に配置
+        overlay.setDepth(19); // ポップアップ背景より奥に配置
 
         // ポップアップの背景を表示
         const popupBackground = this.add.graphics();
         popupBackground.fillStyle(0xffffff, 1); // 白色の背景
         popupBackground.fillRoundedRect(this.scale.width / 5, this.scale.height / 3, this.scale.width * 3 / 5, this.scale.height / 3, 40);
-        popupBackground.setDepth(10); // ポップアップの前面に配置
+        popupBackground.setDepth(20); // ポップアップの前面に配置
         
-    
         // game-clear.pngを中央に表示
         const gameClearImage = this.add.image(this.scale.width / 2, this.scale.height * 0.8 / 3, 'game-clear');
         const imageWidth = Math.min(this.scale.width, this.scale.height) * 0.9;
         gameClearImage.setDisplaySize(imageWidth, gameClearImage.height * (imageWidth / gameClearImage.width));
-        gameClearImage.setDepth(11); // ポップアップの上に表示
+        gameClearImage.setDepth(21); // ポップアップの上に表示
     
         // リトライボタンを画像として配置
         const buttonWidth = this.scale.width / 2;
-        const retryButton = this.add.image(this.scale.width / 2, this.scale.height * 1.4 / 3, 'retryButton');
+        const retryButton = this.add.image(this.scale.width / 2, this.scale.height * 1.35 / 3, 'retryButton');
         retryButton.setDisplaySize(buttonWidth, retryButton.height * (buttonWidth / retryButton.width));
         retryButton.setInteractive();
-        retryButton.setDepth(11); // ポップアップの上に表示
+        retryButton.setDepth(21); // ポップアップの上に表示
     
         retryButton.on('pointerdown', () => {
             this.sound.add('buttonSound')?.play();
@@ -619,7 +635,7 @@ class ShadowGame extends Phaser.Scene {
         const finishButton = this.add.image(this.scale.width / 2, this.scale.height * 1.7 / 3, 'finishButton');
         finishButton.setDisplaySize(buttonWidth, finishButton.height * (buttonWidth / finishButton.width));
         finishButton.setInteractive();
-        finishButton.setDepth(11); // ポップアップの上に表示
+        finishButton.setDepth(21); // ポップアップの上に表示
 
         finishButton.on('pointerdown', () => {
             this.sound.add('buttonSound')?.play();
